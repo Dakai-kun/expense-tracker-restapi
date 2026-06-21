@@ -1,10 +1,14 @@
 const express = require('express');
 const multer = require('multer');
+const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 app.use(express.json());
+
+// Serve documentation/static files at /docs
+app.use('/docs', express.static(path.join(__dirname, 'public')));
 
 const prisma = global.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== 'production') global.prisma = prisma;
