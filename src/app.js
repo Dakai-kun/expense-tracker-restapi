@@ -39,7 +39,8 @@ async function resolveUserFromAuth(auth) {
 }
 
 app.get('/', (req, res) => {
-    res.json({ message: 'REST API Express + Prisma berjalan' });
+    // Arahkan root ke dokumentasi statis
+    res.redirect('/docs');
 });
 
 app.get('/categories', async (req, res) => {

@@ -1,163 +1,222 @@
-<!doctype html>
-<html lang="id">
+<div class="container">
+    <!doctype html>
+    <html lang="id">
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Galeri Hewan API</title>
-    <style>
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            margin: 24px;
-            background: #f9f9f9;
-            color: #222
-        }
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>REST API - Dokumentasi</title>
+        <style>
+            body {
+                font-family: Arial, Helvetica, sans-serif;
+                margin: 24px;
+                background: #f9f9f9;
+                color: #222
+            }
 
-        .container {
-            max-width: 980px;
-            margin: 0 auto
-        }
+            .container {
+                max-width: 980px;
+                margin: 0 auto
+            }
 
-        h1 {
-            font-size: 32px
-        }
+            h1 {
+                font-size: 32px
+            }
 
-        p.lead {
-            color: #555
-        }
+            p.lead {
+                color: #555
+            }
 
-        .card {
-            background: #fff;
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
-            margin: 18px 0;
-            padding: 0
-        }
+            .card {
+                background: #fff;
+                border: 1px solid #e0e0e0;
+                border-radius: 4px;
+                margin: 18px 0;
+                padding: 0
+            }
 
-        .card table {
-            width: 100%;
-            border-collapse: collapse
-        }
+            .card table {
+                width: 100%;
+                border-collapse: collapse
+            }
 
-        .card th,
-        .card td {
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-            text-align: left
-        }
+            .card th,
+            .card td {
+                padding: 12px;
+                border-bottom: 1px solid #eee;
+                text-align: left
+            }
 
-        .card thead tr {
-            background: #f3f3f3
-        }
+            .card thead tr {
+                background: #f3f3f3
+            }
 
-        ul {
-            margin: 8px 0 16px 20px
-        }
+            ul {
+                margin: 8px 0 16px 20px
+            }
 
-        a {
-            color: #1a73e8
-        }
+            a {
+                color: #1a73e8
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <h1>REST API - Dokumentasi</h1>
+            <p class="lead">Ringkasan endpoint yang tersedia pada aplikasi (menggabungkan `src/app.js` dan
+                `src/index.js`).</p>
+
+            <h3>Umum</h3>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>GET</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>URL</td>
+                            <td>/</td>
+                        </tr>
+                        <tr>
+                            <td>Output</td>
+                            <td>JSON: { message: 'REST API Express + Prisma berjalan' }</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Categories (dari `app.js`)</h3>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>GET / POST</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>URL</td>
+                            <td>/categories</td>
+                        </tr>
+                        <tr>
+                            <td>GET</td>
+                            <td>Mengembalikan daftar kategori (sorted by name)</td>
+                        </tr>
+                        <tr>
+                            <td>POST</td>
+                            <td>Body JSON: { name } — membuat kategori baru</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Users (dari `app.js`)</h3>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>GET / POST</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>URL</td>
+                            <td>/users</td>
+                        </tr>
+                        <tr>
+                            <td>GET</td>
+                            <td>Mengembalikan semua pengguna</td>
+                        </tr>
+                        <tr>
+                            <td>POST</td>
+                            <td>Body JSON: { name, email, photoUrl } — membuat atau update user (upsert)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Transactions (dari `app.js`)</h3>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>GET / POST</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>URL</td>
+                            <td>/transactions</td>
+                        </tr>
+                        <tr>
+                            <td>GET</td>
+                            <td>Opsional header: Authorization: &lt;email|id&gt; — jika diberikan, hanya transaksi user
+                                tersebut; include category & user</td>
+                        </tr>
+                        <tr>
+                            <td>GET (detail)</td>
+                            <td>/transactions/:id — mengembalikan transaksi spesifik</td>
+                        </tr>
+                        <tr>
+                            <td>POST</td>
+                            <td>Form multipart (field: title, categoryId, amount, type, date, imageId) atau file `image`
+                                — Authorization header wajib</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Posts (dari `index.js`)</h3>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>GET / POST / PUT / DELETE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>URL</td>
+                            <td>/posts</td>
+                        </tr>
+                        <tr>
+                            <td>GET</td>
+                            <td>Mengembalikan daftar post (ordered by createdAt desc)</td>
+                        </tr>
+                        <tr>
+                            <td>GET (detail)</td>
+                            <td>/posts/:id — mengembalikan satu post</td>
+                        </tr>
+                        <tr>
+                            <td>POST</td>
+                            <td>Body JSON: { title, content, published } — membuat post (title wajib)</td>
+                        </tr>
+                        <tr>
+                            <td>PUT</td>
+                            <td>/posts/:id — Body JSON: { title, content, published } — memperbarui post</td>
+                        </tr>
+                        <tr>
+                            <td>DELETE</td>
+                            <td>/posts/:id — menghapus post</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p>Halaman dokumentasi ini adalah halaman statis. Untuk melihatnya setelah deploy ke Vercel, buka
+                <strong>/docs</strong> pada URL aplikasi Anda.</p>
+        </div>
+    </body>
+
+    </html>
     </style>
-</head>
-
-<body>
-    <div class="container">
-        <h1>Galeri Hewan API</h1>
-        <p class="lead">Ini adalah API untuk mendukung aplikasi Galeri Hewan. Project Android-nya ada di <a
-                href="#">sini</a>.</p>
-
-        <h3>Mengambil Data Hewan</h3>
-        <div class="card">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Method</th>
-                        <th>GET</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>URL</td>
-                        <td>/hewan.php</td>
-                    </tr>
-                    <tr>
-                        <td>Header</td>
-                        <td>Authorization: &lt;email-pengguna&gt;<br><small>(opsional) Jika tidak ada, data yang keluar
-                                hanya hewan publik.</small></td>
-                    </tr>
-                    <tr>
-                        <td>Output</td>
-                        <td>
-                            JSONArray dengan tiap item berisi data hewan dengan atribut:
-                            <ul>
-                                <li>id</li>
-                                <li>nama</li>
-                                <li>namaLatin</li>
-                                <li>imageId</li>
-                                <li>mine → 0: hewan milik publik; 1: hewan milik pengguna</li>
-                            </ul>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <h3>Mengambil Gambar Hewan</h3>
-        <div class="card">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Method</th>
-                        <th>GET</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>URL</td>
-                        <td>/image.php</td>
-                    </tr>
-                    <tr>
-                        <td>Parameter</td>
-                        <td>id=&lt;imageId&gt;</td>
-                    </tr>
-                    <tr>
-                        <td>Output</td>
-                        <td>Gambar dengan format JPEG, jika ada gambar yang sesuai id-nya.</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <h3>Menyimpan Data Hewan</h3>
-        <div class="card">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Method</th>
-                        <th>POST</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>URL</td>
-                        <td>/hewan.php</td>
-                    </tr>
-                    <tr>
-                        <td>Header</td>
-                        <td>Authorization: &lt;email-pengguna&gt;</td>
-                    </tr>
-                    <tr>
-                        <td>Request Body</td>
-                        <td>Data harus dikirim multipart/form-data (title, categoryId, amount, type, date, image file
-                            atau imageId)</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <p>Halaman dokumentasi ini disajikan sebagai halaman statis. Untuk melihatnya setelah deploy ke Vercel, buka
-            <strong>/docs</strong> pada URL aplikasi Anda.</p>
-    </div>
-</body>
-
-</html>
+    </head>
+    </html>
