@@ -1,79 +1,163 @@
 <!doctype html>
 <html lang="id">
+
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Galeri Hewan API</title>
-  <style>
-    body{font-family:Arial,Helvetica,sans-serif;margin:24px;background:#f9f9f9;color:#222}
-    .container{max-width:980px;margin:0 auto}
-    h1{font-size:32px}
-    p.lead{color:#555}
-    .card{background:#fff;border:1px solid #e0e0e0;border-radius:4px;margin:18px 0;padding:0}
-    .card table{width:100%;border-collapse:collapse}
-    .card th, .card td{padding:12px;border-bottom:1px solid #eee;text-align:left}
-    .card thead tr{background:#f3f3f3}
-    ul{margin:8px 0 16px 20px}
-    a{color:#1a73e8}
-  </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Galeri Hewan API</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 24px;
+            background: #f9f9f9;
+            color: #222
+        }
+
+        .container {
+            max-width: 980px;
+            margin: 0 auto
+        }
+
+        h1 {
+            font-size: 32px
+        }
+
+        p.lead {
+            color: #555
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            margin: 18px 0;
+            padding: 0
+        }
+
+        .card table {
+            width: 100%;
+            border-collapse: collapse
+        }
+
+        .card th,
+        .card td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            text-align: left
+        }
+
+        .card thead tr {
+            background: #f3f3f3
+        }
+
+        ul {
+            margin: 8px 0 16px 20px
+        }
+
+        a {
+            color: #1a73e8
+        }
+    </style>
 </head>
+
 <body>
-  <div class="container">
-    <h1>Galeri Hewan API</h1>
-    <p class="lead">Ini adalah API untuk mendukung aplikasi Galeri Hewan. Project Android-nya ada di <a href="#">sini</a>.</p>
+    <div class="container">
+        <h1>Galeri Hewan API</h1>
+        <p class="lead">Ini adalah API untuk mendukung aplikasi Galeri Hewan. Project Android-nya ada di <a
+                href="#">sini</a>.</p>
 
-    <h3>Mengambil Data Hewan</h3>
-    <div class="card">
-      <table>
-        <thead>
-          <tr><th>Method</th><th>GET</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>URL</td><td>/hewan.php</td></tr>
-          <tr><td>Header</td><td>Authorization: &lt;email-pengguna&gt;<br><small>(opsional) Jika tidak ada, data yang keluar hanya hewan publik.</small></td></tr>
-          <tr><td>Output</td><td>
-            JSONArray dengan tiap item berisi data hewan dengan atribut:
-            <ul>
-              <li>id</li>
-              <li>nama</li>
-              <li>namaLatin</li>
-              <li>imageId</li>
-              <li>mine → 0: hewan milik publik; 1: hewan milik pengguna</li>
-            </ul>
-          </td></tr>
-        </tbody>
-      </table>
+        <h3>Mengambil Data Hewan</h3>
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>GET</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>URL</td>
+                        <td>/hewan.php</td>
+                    </tr>
+                    <tr>
+                        <td>Header</td>
+                        <td>Authorization: &lt;email-pengguna&gt;<br><small>(opsional) Jika tidak ada, data yang keluar
+                                hanya hewan publik.</small></td>
+                    </tr>
+                    <tr>
+                        <td>Output</td>
+                        <td>
+                            JSONArray dengan tiap item berisi data hewan dengan atribut:
+                            <ul>
+                                <li>id</li>
+                                <li>nama</li>
+                                <li>namaLatin</li>
+                                <li>imageId</li>
+                                <li>mine → 0: hewan milik publik; 1: hewan milik pengguna</li>
+                            </ul>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Mengambil Gambar Hewan</h3>
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>GET</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>URL</td>
+                        <td>/image.php</td>
+                    </tr>
+                    <tr>
+                        <td>Parameter</td>
+                        <td>id=&lt;imageId&gt;</td>
+                    </tr>
+                    <tr>
+                        <td>Output</td>
+                        <td>Gambar dengan format JPEG, jika ada gambar yang sesuai id-nya.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Menyimpan Data Hewan</h3>
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>POST</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>URL</td>
+                        <td>/hewan.php</td>
+                    </tr>
+                    <tr>
+                        <td>Header</td>
+                        <td>Authorization: &lt;email-pengguna&gt;</td>
+                    </tr>
+                    <tr>
+                        <td>Request Body</td>
+                        <td>Data harus dikirim multipart/form-data (title, categoryId, amount, type, date, image file
+                            atau imageId)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>Halaman dokumentasi ini disajikan sebagai halaman statis. Untuk melihatnya setelah deploy ke Vercel, buka
+            <strong>/docs</strong> pada URL aplikasi Anda.</p>
     </div>
-
-    <h3>Mengambil Gambar Hewan</h3>
-    <div class="card">
-      <table>
-        <thead>
-          <tr><th>Method</th><th>GET</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>URL</td><td>/image.php</td></tr>
-          <tr><td>Parameter</td><td>id=&lt;imageId&gt;</td></tr>
-          <tr><td>Output</td><td>Gambar dengan format JPEG, jika ada gambar yang sesuai id-nya.</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <h3>Menyimpan Data Hewan</h3>
-    <div class="card">
-      <table>
-        <thead>
-          <tr><th>Method</th><th>POST</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>URL</td><td>/hewan.php</td></tr>
-          <tr><td>Header</td><td>Authorization: &lt;email-pengguna&gt;</td></tr>
-          <tr><td>Request Body</td><td>Data harus dikirim multipart/form-data (title, categoryId, amount, type, date, image file atau imageId)</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <p>Halaman dokumentasi ini disajikan sebagai halaman statis. Untuk melihatnya setelah deploy ke Vercel, buka <strong>/docs</strong> pada URL aplikasi Anda.</p>
-  </div>
 </body>
+
 </html>
