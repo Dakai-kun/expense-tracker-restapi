@@ -348,29 +348,64 @@ app.post('/transactions', upload.single('image'), async (req, res) => {
 });
 
 // Tambahkan di app.js
-app.put(
-    "/transactions/:id",
-    upload.single("image"),
-    async (req, res) => {
-        const id = Number(req.params.id);
-        const updateData = {
-            title: req.body.title,
-            categoryId: Number(req.body.categoryId),
-            amount: Number(req.body.amount),
-            type: req.body.type
+app.put('/transactions/:id', upload.single('image'), async (req, res) => {
+    const { id } = req.params;
+    const auth = req.header('Authorization')
+    const {
+        title,
+        categoryId,
+        amount,
+        type
+    } = req.body;
+    const file = req.file;
+    if (!auth) {
+        return res.status(401).json({
+            error: "Authorization header wajib diisi"
+        });
+    }
+    try {
+        const user = await resolveUserFromAuth(auth);
+        if (!user) {
+            return res.status(401).json({
+                error: "User tidak ditemukan"
+            });
+        }
+        let updateData = {
+            title,
+            amount: Number(amount),
+            type,
+            categoryId: Number(categoryId)
         };
-        if (req.file) {
-            updateData.imageId = req.file.filename;
+        // jika upload gambar baru
+        if (file) {
+            const blob = await put(file.originalname, file.buffer, createBlobUploadOptions());
+            updateData.imageId = blob.url;
         }
         const transaction =
             await prisma.transaction.update({
                 where: {
-                    id: id
+                    id: Number(id)
                 },
-                data: updateData
+                data: updateData,
+                include: {
+                    category: true,
+                    user: true
+                }
             });
-        res.json(transaction);
-    });
+        res.json(
+            withTransactionImageUrl(
+                req,
+                transaction
+            )
+        );
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+
+            error: "Gagal update transaksi"
+        });
+    }
+});
 
 app.delete('/transactions/:id', async (req, res) => {
     const { id } = req.params;
