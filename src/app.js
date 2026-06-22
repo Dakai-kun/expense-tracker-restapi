@@ -13,6 +13,7 @@ const app = express();
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+app.set('trust proxy', 1);
 app.use(express.json());
 
 // Serve documentation/static files at /docs
@@ -58,7 +59,6 @@ function resolveBlobAccess() {
 function createBlobOptions() {
     const blobOpts = {
         access: resolveBlobAccess(),
-        addRandomSuffix: true,
     };
 
     if (process.env.BLOB_READ_WRITE_TOKEN) {
@@ -69,6 +69,61 @@ function createBlobOptions() {
     }
 
     return blobOpts;
+}
+
+function createBlobUploadOptions() {
+    return {
+        ...createBlobOptions(),
+        addRandomSuffix: true,
+    };
+}
+
+function getRequestBaseUrl(req) {
+    const forwardedProto = req.get('x-forwarded-proto');
+    const protocol = forwardedProto ? forwardedProto.split(',')[0] : req.protocol;
+    return `${protocol}://${req.get('host')}`;
+}
+
+function withTransactionImageUrl(req, transaction) {
+    return {
+        ...transaction,
+        imageId: transaction.imageId ? String(transaction.id) : null,
+        imageUrl: transaction.imageId ? `${getRequestBaseUrl(req)}/transaction/image/${transaction.id}` : null,
+    };
+}
+
+async function streamTransactionImage(req, res, transaction) {
+    if (!transaction || !transaction.imageId) {
+        return res.status(404).json({ error: 'Gambar transaksi tidak ditemukan' });
+    }
+
+    const blob = await get(transaction.imageId, {
+        ...createBlobOptions(),
+        ifNoneMatch: req.header('if-none-match'),
+    });
+
+    if (!blob) return res.status(404).json({ error: 'Gambar transaksi tidak ditemukan' });
+    if (blob.statusCode === 304) return res.status(304).end();
+
+    res.setHeader('Content-Type', blob.blob.contentType);
+    res.setHeader('Content-Length', blob.blob.size);
+    res.setHeader('Cache-Control', blob.blob.cacheControl);
+    res.setHeader('ETag', blob.blob.etag);
+
+    return Readable.fromWeb(blob.stream).pipe(res);
+}
+
+async function streamTransactionImageByBlobUrl(req, res, rawImageId) {
+    const imageId = rawImageId.startsWith('https:/') && !rawImageId.startsWith('https://')
+        ? rawImageId.replace(/^https:\//, 'https://')
+        : rawImageId;
+
+    const transaction = await prisma.transaction.findFirst({
+        where: { imageId },
+        select: { imageId: true },
+    });
+
+    return streamTransactionImage(req, res, transaction);
 }
 
 app.get('/', (req, res) => {
@@ -146,7 +201,7 @@ app.get('/transactions', async (req, res) => {
             orderBy: { date: 'desc' },
         });
 
-        res.json(transactions);
+        res.json(transactions.map((transaction) => withTransactionImageUrl(req, transaction)));
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Gagal mengambil transaksi' });
@@ -162,21 +217,61 @@ app.get('/transactions/:id', async (req, res) => {
             include: { category: true, user: true },
         });
         if (!transaction) return res.status(404).json({ error: 'Transaksi tidak ditemukan' });
-        res.json(transaction);
+        res.json(withTransactionImageUrl(req, transaction));
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Gagal mengambil transaksi' });
     }
 });
 
-app.get('/transactions/image/:imageId', async (req, res) => {
-    const { imageId } = req.params;
-    const transaction = await prisma.transaction.findFirst({
-        where: { imageId: imageId },
-        select: { imageId: true },
-    });
-    if (!transaction) return res.status(404).json({ error: 'Transaksi tidak ditemukan' });
-    res.json(transaction);
+app.get('/transaction/image/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const transaction = await prisma.transaction.findUnique({
+            where: { id: Number(id) },
+            select: { imageId: true },
+        });
+
+        return streamTransactionImage(req, res, transaction);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Gagal mengambil gambar transaksi' });
+    }
+});
+
+app.get('/transaction/image/*', async (req, res) => {
+    try {
+        return streamTransactionImageByBlobUrl(req, res, req.params[0]);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Gagal mengambil gambar transaksi' });
+    }
+});
+
+app.get('/transactions/image/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const transaction = await prisma.transaction.findUnique({
+            where: { id: Number(id) },
+            select: { imageId: true },
+        });
+
+        return streamTransactionImage(req, res, transaction);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Gagal mengambil gambar transaksi' });
+    }
+});
+
+app.get('/transactions/image/*', async (req, res) => {
+    try {
+        return streamTransactionImageByBlobUrl(req, res, req.params[0]);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Gagal mengambil gambar transaksi' });
+    }
 });
 
 app.get('/transactions/:id/image', async (req, res) => {
@@ -201,20 +296,7 @@ app.get('/transactions/:id/image', async (req, res) => {
             return res.status(404).json({ error: 'Gambar transaksi tidak ditemukan' });
         }
 
-        const blob = await get(transaction.imageId, {
-            ...createBlobOptions(),
-            ifNoneMatch: req.header('if-none-match'),
-        });
-
-        if (!blob) return res.status(404).json({ error: 'Gambar transaksi tidak ditemukan' });
-        if (blob.statusCode === 304) return res.status(304).end();
-
-        res.setHeader('Content-Type', blob.blob.contentType);
-        res.setHeader('Content-Length', blob.blob.size);
-        res.setHeader('Cache-Control', blob.blob.cacheControl);
-        res.setHeader('ETag', blob.blob.etag);
-
-        Readable.fromWeb(blob.stream).pipe(res);
+        return streamTransactionImage(req, res, transaction);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Gagal mengambil gambar transaksi' });
@@ -238,7 +320,7 @@ app.post('/transactions', upload.single('image'), async (req, res) => {
         let savedImageId = imageId ?? null;
 
         if (file) {
-            const blob = await put(file.originalname, file.buffer, createBlobOptions());
+            const blob = await put(file.originalname, file.buffer, createBlobUploadOptions());
             savedImageId = blob.url;
         }
 
@@ -258,7 +340,7 @@ app.post('/transactions', upload.single('image'), async (req, res) => {
             },
         });
 
-        res.status(201).json(transaction);
+        res.status(201).json(withTransactionImageUrl(req, transaction));
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Gagal membuat transaksi' });
