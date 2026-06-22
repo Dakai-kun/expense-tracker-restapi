@@ -347,6 +347,27 @@ app.post('/transactions', upload.single('image'), async (req, res) => {
     }
 });
 
+// Tambahkan di app.js
+app.put('/transactions/:id', async (req, res) => {
+    const { id } = req.params;
+    const { title, categoryId, amount, type } = req.body;
+    try {
+        const updated = await prisma.transaction.update({
+            where: { id: Number(id) },
+            data: { title, categoryId: Number(categoryId), amount: Number(amount), type }
+        });
+        res.json(updated);
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.delete('/transactions/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await prisma.transaction.delete({ where: { id: Number(id) } });
+        res.json({ message: 'Berhasil dihapus' });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 app.use((req, res) => {
     res.status(404).json({ error: 'Rute tidak ditemukan' });
 });
