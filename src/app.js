@@ -1,28 +1,14 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 const { PrismaClient } = require('@prisma/client');
 
 const app = express();
-
-const uploadsDir = path.join(__dirname, 'public', 'uploads');
-
-const upload = multer({
-    storage: multer.diskStorage({
-        destination: uploadsDir,
-        filename: (req, file, cb) => {
-            const safeFilename = `${Date.now()}-${file.originalname}`.replace(/\s+/g, '-');
-            cb(null, safeFilename);
-        },
-    }),
-});
-
+const upload = multer({ storage: multer.memoryStorage() });
 app.use(express.json());
 
 // Serve documentation/static files at /docs
 app.use('/docs', express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(uploadsDir));
 
 const prisma = global.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== 'production') global.prisma = prisma;
@@ -174,15 +160,13 @@ app.post('/transactions', upload.single('image'), async (req, res) => {
         const user = await resolveUserFromAuth(auth);
         if (!user) return res.status(401).json({ error: 'User tidak ditemukan' });
 
-        const savedImageId = file ? file.filename : imageId ?? null;
-
         const transaction = await prisma.transaction.create({
             data: {
                 title,
                 amount: Number(amount),
                 type,
                 date,
-                imageId: savedImageId,
+                imageId: file ? `${Date.now()}-${file.originalname}` : imageId ?? null,
                 categoryId: Number(categoryId),
                 userId: user.id,
             },
