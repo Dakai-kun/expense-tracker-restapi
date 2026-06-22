@@ -46,6 +46,14 @@ async function resolveUserFromAuth(auth) {
     return null;
 }
 
+function resolveBlobAccess() {
+    const configuredAccess = process.env.BLOB_ACCESS ?? process.env.BLOB_STORE_PUBLIC;
+    const value = String(configuredAccess ?? '').trim().toLowerCase();
+
+    if (value === 'private' || value === 'false') return 'private';
+    return 'public';
+}
+
 app.get('/', (req, res) => {
     // Arahkan root ke dokumentasi statis
     res.redirect('/docs');
@@ -171,17 +179,9 @@ app.post('/transactions', upload.single('image'), async (req, res) => {
         let savedImageId = imageId ?? null;
 
         if (file) {
-            // Do not force public access unless explicitly configured.
-            // Some stores are private-only and will error when using access: 'public'.
-            const blobOpts = {};
-            if (typeof process.env.BLOB_STORE_PUBLIC !== 'undefined') {
-                const val = String(process.env.BLOB_STORE_PUBLIC).trim().toLowerCase();
-                if (val === 'true' || val === 'public') {
-                    blobOpts.access = 'public';
-                } else if (val === 'false' || val === 'private') {
-                    blobOpts.access = 'private';
-                }
-            }
+            const blobOpts = {
+                access: resolveBlobAccess(),
+            };
 
             if (process.env.BLOB_READ_WRITE_TOKEN) {
                 blobOpts.token = process.env.BLOB_READ_WRITE_TOKEN;
