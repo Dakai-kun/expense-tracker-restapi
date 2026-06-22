@@ -171,7 +171,13 @@ app.post('/transactions', upload.single('image'), async (req, res) => {
         let savedImageId = imageId ?? null;
 
         if (file) {
-            const blobOpts = { access: 'public' };
+            // Do not force public access unless explicitly configured.
+            // Some stores are private-only and will error when using access: 'public'.
+            const blobOpts = {};
+            if (process.env.BLOB_STORE_PUBLIC === 'true') {
+                blobOpts.access = 'public';
+            }
+
             if (process.env.BLOB_READ_WRITE_TOKEN) {
                 blobOpts.token = process.env.BLOB_READ_WRITE_TOKEN;
             } else if (process.env.BLOB_STORE_ID && process.env.VERCEL_OIDC_TOKEN) {
