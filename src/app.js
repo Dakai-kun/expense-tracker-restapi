@@ -348,17 +348,25 @@ app.post('/transactions', upload.single('image'), async (req, res) => {
 });
 
 // Tambahkan di app.js
-app.put('/transactions/:id', async (req, res) => {
-    const { id } = req.params;
-    const { title, categoryId, amount, type } = req.body;
-    try {
-        const updated = await prisma.transaction.update({
-            where: { id: Number(id) },
-            data: { title, categoryId: Number(categoryId), amount: Number(amount), type }
-        });
-        res.json(updated);
-    } catch (error) { res.status(500).json({ error: error.message }); }
-});
+app.put(
+    '/transactions/:id',
+    upload.single('image'),
+    async (req, res) => {
+        const { id } = req.params;
+        const transaction =
+            await prisma.transaction.update({ where: { id: Number(id) },
+                data: {
+                    title: req.body.title,
+                    categoryId: Number(req.body.categoryId),
+                    amount: Number(req.body.amount),
+                    type: req.body.type,
+                    imageId: req.file
+                        ? req.file.filename
+                        : undefined
+                }
+            });
+        res.json(transaction);
+    });
 
 app.delete('/transactions/:id', async (req, res) => {
     const { id } = req.params;
