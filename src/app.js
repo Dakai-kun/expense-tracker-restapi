@@ -2,7 +2,8 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { put } = require('@vercel/blob');
+const { Readable } = require('stream');
+const { get, put } = require('@vercel/blob');
 const { PrismaClient } = require('@prisma/client');
 
 // Local env loader (for local development). On Vercel set env vars in Project Settings.
@@ -52,6 +53,21 @@ function resolveBlobAccess() {
 
     if (value === 'private' || value === 'false') return 'private';
     return 'public';
+}
+
+function createBlobOptions() {
+    const blobOpts = {
+        access: resolveBlobAccess(),
+    };
+
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+        blobOpts.token = process.env.BLOB_READ_WRITE_TOKEN;
+    } else if (process.env.BLOB_STORE_ID && process.env.VERCEL_OIDC_TOKEN) {
+        blobOpts.storeId = process.env.BLOB_STORE_ID;
+        blobOpts.oidcToken = process.env.VERCEL_OIDC_TOKEN;
+    }
+
+    return blobOpts;
 }
 
 app.get('/', (req, res) => {
@@ -162,6 +178,48 @@ app.get('/transactions/image/:imageId', async (req, res) => {
     res.json(transaction);
 });
 
+app.get('/transactions/:id/image', async (req, res) => {
+    const auth = req.header('Authorization');
+    const { id } = req.params;
+
+    if (!auth) return res.status(401).json({ error: 'Authorization header wajib diisi' });
+
+    try {
+        const user = await resolveUserFromAuth(auth);
+        if (!user) return res.status(401).json({ error: 'User tidak ditemukan' });
+
+        const transaction = await prisma.transaction.findFirst({
+            where: {
+                id: Number(id),
+                userId: user.id,
+            },
+            select: { imageId: true },
+        });
+
+        if (!transaction || !transaction.imageId) {
+            return res.status(404).json({ error: 'Gambar transaksi tidak ditemukan' });
+        }
+
+        const blob = await get(transaction.imageId, {
+            ...createBlobOptions(),
+            ifNoneMatch: req.header('if-none-match'),
+        });
+
+        if (!blob) return res.status(404).json({ error: 'Gambar transaksi tidak ditemukan' });
+        if (blob.statusCode === 304) return res.status(304).end();
+
+        res.setHeader('Content-Type', blob.blob.contentType);
+        res.setHeader('Content-Length', blob.blob.size);
+        res.setHeader('Cache-Control', blob.blob.cacheControl);
+        res.setHeader('ETag', blob.blob.etag);
+
+        Readable.fromWeb(blob.stream).pipe(res);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Gagal mengambil gambar transaksi' });
+    }
+});
+
 app.post('/transactions', upload.single('image'), async (req, res) => {
     const auth = req.header('Authorization');
     const { title, categoryId, amount, type, date, imageId } = req.body;
@@ -179,18 +237,7 @@ app.post('/transactions', upload.single('image'), async (req, res) => {
         let savedImageId = imageId ?? null;
 
         if (file) {
-            const blobOpts = {
-                access: resolveBlobAccess(),
-            };
-
-            if (process.env.BLOB_READ_WRITE_TOKEN) {
-                blobOpts.token = process.env.BLOB_READ_WRITE_TOKEN;
-            } else if (process.env.BLOB_STORE_ID && process.env.VERCEL_OIDC_TOKEN) {
-                blobOpts.storeId = process.env.BLOB_STORE_ID;
-                blobOpts.oidcToken = process.env.VERCEL_OIDC_TOKEN;
-            }
-
-            const blob = await put(file.originalname, file.buffer, blobOpts);
+            const blob = await put(file.originalname, file.buffer, createBlobOptions());
             savedImageId = blob.url;
         }
 
