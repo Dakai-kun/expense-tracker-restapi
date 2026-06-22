@@ -136,6 +136,16 @@ app.get('/transactions/:id', async (req, res) => {
     }
 });
 
+app.get('/transactions/image/:imageId', async (req, res) => {
+    const { imageId } = req.params;
+    const transaction = await prisma.transaction.findFirst({
+        where: { imageId: imageId },
+        select: { imageId: true },
+    });
+    if (!transaction) return res.status(404).json({ error: 'Transaksi tidak ditemukan' });
+    res.json(transaction);
+});
+
 app.post('/transactions', upload.single('image'), async (req, res) => {
     const auth = req.header('Authorization');
     const { title, categoryId, amount, type, date, imageId } = req.body;
