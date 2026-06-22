@@ -48,6 +48,18 @@ async function resolveUserFromAuth(auth) {
     return null;
 }
 
+function getUserEmailFromRequest(req) {
+    const bodyEmail = req.body?.userEmail;
+    const queryEmail = req.query?.userEmail;
+    const auth = req.header('Authorization');
+
+    if (bodyEmail) return String(bodyEmail);
+    if (queryEmail) return String(queryEmail);
+    if (auth && auth.includes('@')) return auth;
+
+    return '';
+}
+
 function resolveBlobAccess() {
     const configuredAccess = process.env.BLOB_ACCESS ?? process.env.BLOB_STORE_PUBLIC;
     const value = String(configuredAccess ?? '').trim().toLowerCase();
@@ -132,8 +144,13 @@ app.get('/', (req, res) => {
 });
 
 app.get('/categories', async (req, res) => {
+    const userEmail = getUserEmailFromRequest(req);
+
     try {
-        const categories = await prisma.category.findMany({ orderBy: { name: 'asc' } });
+        const categories = await prisma.category.findMany({
+            where: userEmail ? { userEmail } : undefined,
+            orderBy: { name: 'asc' },
+        });
         res.json(categories);
     } catch (error) {
         console.error(error);
@@ -143,10 +160,17 @@ app.get('/categories', async (req, res) => {
 
 app.post('/categories', async (req, res) => {
     const { name } = req.body;
+    const userEmail = getUserEmailFromRequest(req);
     if (!name) return res.status(400).json({ error: 'name harus diisi' });
+    if (!userEmail) return res.status(400).json({ error: 'userEmail harus diisi' });
 
     try {
-        const category = await prisma.category.create({ data: { name } });
+        const category = await prisma.category.create({
+            data: {
+                name,
+                userEmail,
+            },
+        });
         res.status(201).json(category);
     } catch (error) {
         console.error(error);
@@ -419,11 +443,13 @@ app.delete('/transactions/:id', async (req, res) => {
 app.put('/categories/:id', async (req,res)=>{
     const id = Number(req.params.id);
     const {name} = req.body;
+    const userEmail = getUserEmailFromRequest(req);
     try {
         const existing =
-        await prisma.category.findUnique({
+        await prisma.category.findFirst({
             where:{
-                id:id
+                id:id,
+                ...(userEmail ? { userEmail } : {})
             }
         });
         if(!existing){
@@ -438,7 +464,8 @@ app.put('/categories/:id', async (req,res)=>{
                 id:id
             },
             data:{
-                name:name
+                ...(typeof name !== 'undefined' ? { name: name } : {}),
+                ...(userEmail ? { userEmail: userEmail } : {})
             }
         });
         res.json(category);
@@ -452,10 +479,12 @@ app.put('/categories/:id', async (req,res)=>{
 
     app.delete('/categories/:id', async (req, res) => {
     const id = Number(req.params.id);
+    const userEmail = getUserEmailFromRequest(req);
     try {
-        const category = await prisma.category.findUnique({
+        const category = await prisma.category.findFirst({
             where: {
-                id: id
+                id: id,
+                ...(userEmail ? { userEmail } : {})
             }
         });
         if (!category) {
@@ -465,7 +494,7 @@ app.put('/categories/:id', async (req,res)=>{
         }
         await prisma.category.delete({
             where: {
-                id: id
+                id: category.id
             }
         });
         res.json({
