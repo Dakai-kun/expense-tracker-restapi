@@ -5,6 +5,9 @@ const fs = require('fs');
 const { put } = require('@vercel/blob');
 const { PrismaClient } = require('@prisma/client');
 
+// Local env loader (for local development). On Vercel set env vars in Project Settings.
+require('dotenv').config();
+
 const app = express();
 
 const storage = multer.memoryStorage();
@@ -168,9 +171,15 @@ app.post('/transactions', upload.single('image'), async (req, res) => {
         let savedImageId = imageId ?? null;
 
         if (file) {
-            const blob = await put(file.originalname, file.buffer, {
-                access: 'public',
-            });
+            const blobOpts = { access: 'public' };
+            if (process.env.BLOB_READ_WRITE_TOKEN) {
+                blobOpts.token = process.env.BLOB_READ_WRITE_TOKEN;
+            } else if (process.env.BLOB_STORE_ID && process.env.VERCEL_OIDC_TOKEN) {
+                blobOpts.storeId = process.env.BLOB_STORE_ID;
+                blobOpts.oidcToken = process.env.VERCEL_OIDC_TOKEN;
+            }
+
+            const blob = await put(file.originalname, file.buffer, blobOpts);
             savedImageId = blob.url;
         }
 
