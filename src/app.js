@@ -4,7 +4,16 @@ const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 
 const app = express();
-const upload = multer({ storage: multer.memoryStorage() });
+// Di app.js (Backend), ubah konfigurasi multer:
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'public/') // Foto disimpan ke folder public
+  },
+  filename: function (req, file, cb) {
+    cb(null, `${Date.now()}-${file.originalname}`)
+  }
+});
+const upload = multer({ storage: storage });
 app.use(express.json());
 
 // Serve documentation/static files at /docs
