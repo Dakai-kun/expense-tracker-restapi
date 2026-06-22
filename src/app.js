@@ -419,4 +419,64 @@ app.use((req, res) => {
     res.status(404).json({ error: 'Rute tidak ditemukan' });
 });
 
+app.put('/categories/:id', async (req, res) => {
+    const id = Number(req.params.id);
+    const { name } = req.body;
+    try {
+        const category =
+            await prisma.category.update({
+                where: {
+                    id: id
+                },
+                data: {
+                    name: name
+                }
+            });
+        res.json(category);
+    } catch (error) {
+        console.error(error);
+        res.status(500)
+            .json({
+                error: "Gagal update kategori"
+            });
+    }
+});
+
+app.delete('/categories/:id', async (req, res) => {
+    const id = Number(req.params.id);
+    try {
+        const category = await prisma.category.findUnique({
+            where: {
+                id: id
+            }
+        });
+        if (!category) {
+            return res.status(404).json({
+                error: "Kategori tidak ditemukan"
+            });
+        }
+        await prisma.category.delete({
+            where: {
+                id: id
+            }
+        });
+        res.json({
+            message: "Kategori berhasil dihapus"
+        });
+    } catch (error) {
+        console.error(error);
+        // jika kategori masih digunakan transaksi
+        if (error.code === "P2003") {
+
+            return res.status(400).json({
+                error: "Kategori masih digunakan oleh transaksi"
+            });
+
+        }
+        res.status(500).json({
+            error: "Gagal menghapus kategori"
+        });
+    }
+});
+
 module.exports = app;
