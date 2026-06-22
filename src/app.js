@@ -349,21 +349,25 @@ app.post('/transactions', upload.single('image'), async (req, res) => {
 
 // Tambahkan di app.js
 app.put(
-    '/transactions/:id',
-    upload.single('image'),
+    "/transactions/:id",
+    upload.single("image"),
     async (req, res) => {
-        const { id } = req.params;
+        const id = Number(req.params.id);
+        const updateData = {
+            title: req.body.title,
+            categoryId: Number(req.body.categoryId),
+            amount: Number(req.body.amount),
+            type: req.body.type
+        };
+        if (req.file) {
+            updateData.imageId = req.file.filename;
+        }
         const transaction =
-            await prisma.transaction.update({ where: { id: Number(id) },
-                data: {
-                    title: req.body.title,
-                    categoryId: Number(req.body.categoryId),
-                    amount: Number(req.body.amount),
-                    type: req.body.type,
-                    imageId: req.file
-                        ? req.file.filename
-                        : undefined
-                }
+            await prisma.transaction.update({
+                where: {
+                    id: id
+                },
+                data: updateData
             });
         res.json(transaction);
     });
