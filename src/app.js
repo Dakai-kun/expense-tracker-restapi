@@ -174,8 +174,13 @@ app.post('/transactions', upload.single('image'), async (req, res) => {
             // Do not force public access unless explicitly configured.
             // Some stores are private-only and will error when using access: 'public'.
             const blobOpts = {};
-            if (process.env.BLOB_STORE_PUBLIC === 'true') {
-                blobOpts.access = 'public';
+            if (typeof process.env.BLOB_STORE_PUBLIC !== 'undefined') {
+                const val = String(process.env.BLOB_STORE_PUBLIC).trim().toLowerCase();
+                if (val === 'true' || val === 'public') {
+                    blobOpts.access = 'public';
+                } else if (val === 'false' || val === 'private') {
+                    blobOpts.access = 'private';
+                }
             }
 
             if (process.env.BLOB_READ_WRITE_TOKEN) {
