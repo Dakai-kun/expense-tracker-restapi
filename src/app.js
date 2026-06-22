@@ -2,29 +2,17 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { put } = require('@vercel/blob');
 const { PrismaClient } = require('@prisma/client');
 
 const app = express();
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dest = path.join(__dirname, 'public');
-        if (!fs.existsSync(dest)) {
-            fs.mkdirSync(dest, { recursive: true });
-        }
-        cb(null, dest);
-    },
-    filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`.replace(/\s+/g, '-'));
-    },
-});
-
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 app.use(express.json());
 
 // Serve documentation/static files at /docs
 app.use('/docs', express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'public')));
 
 const prisma = global.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== 'production') global.prisma = prisma;
@@ -177,13 +165,22 @@ app.post('/transactions', upload.single('image'), async (req, res) => {
         const user = await resolveUserFromAuth(auth);
         if (!user) return res.status(401).json({ error: 'User tidak ditemukan' });
 
+        let savedImageId = imageId ?? null;
+
+        if (file) {
+            const blob = await put(file.originalname, file.buffer, {
+                access: 'public',
+            });
+            savedImageId = blob.url;
+        }
+
         const transaction = await prisma.transaction.create({
             data: {
                 title,
                 amount: Number(amount),
                 type,
                 date,
-                imageId: file ? `${Date.now()}-${file.originalname}` : imageId ?? null,
+                imageId: savedImageId,
                 categoryId: Number(categoryId),
                 userId: user.id,
             },
