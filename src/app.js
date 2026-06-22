@@ -415,34 +415,42 @@ app.delete('/transactions/:id', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-app.use((req, res) => {
-    res.status(404).json({ error: 'Rute tidak ditemukan' });
-});
 
-app.put('/categories/:id', async (req, res) => {
+app.put('/categories/:id', async (req,res)=>{
     const id = Number(req.params.id);
-    const { name } = req.body;
+    const {name} = req.body;
     try {
+        const existing =
+        await prisma.category.findUnique({
+            where:{
+                id:id
+            }
+        });
+        if(!existing){
+            return res.status(404).json({
+                error:"Kategori tidak ditemukan"
+            });
+
+        }
         const category =
-            await prisma.category.update({
-                where: {
-                    id: id
-                },
-                data: {
-                    name: name
-                }
-            });
+        await prisma.category.update({
+            where:{
+                id:id
+            },
+            data:{
+                name:name
+            }
+        });
         res.json(category);
-    } catch (error) {
+    }catch(error){
         console.error(error);
-        res.status(500)
-            .json({
-                error: "Gagal update kategori"
-            });
+        res.status(500).json({
+            error:"Gagal update kategori"
+        });
     }
 });
 
-app.delete('/categories/:id', async (req, res) => {
+    app.delete('/categories/:id', async (req, res) => {
     const id = Number(req.params.id);
     try {
         const category = await prisma.category.findUnique({
@@ -467,16 +475,20 @@ app.delete('/categories/:id', async (req, res) => {
         console.error(error);
         // jika kategori masih digunakan transaksi
         if (error.code === "P2003") {
-
+            
             return res.status(400).json({
                 error: "Kategori masih digunakan oleh transaksi"
             });
-
+            
         }
         res.status(500).json({
             error: "Gagal menghapus kategori"
         });
     }
+});
+
+app.use((req, res) => {
+    res.status(404).json({ error: 'Rute tidak ditemukan' });
 });
 
 module.exports = app;
