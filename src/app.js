@@ -58,6 +58,7 @@ function resolveBlobAccess() {
 function createBlobOptions() {
     const blobOpts = {
         access: resolveBlobAccess(),
+        addRandomSuffix: true,
     };
 
     if (process.env.BLOB_READ_WRITE_TOKEN) {
